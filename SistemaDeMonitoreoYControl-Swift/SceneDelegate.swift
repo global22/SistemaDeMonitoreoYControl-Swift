@@ -8,16 +8,43 @@
 
 import UIKit
 
+@available(iOS 13.0, *)
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
-
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let _ = (scene as? UIWindowScene) else { return }
+        guard let windowScene = (scene as? UIWindowScene) else { return }
+        window = UIWindow(windowScene: windowScene)
+        
+        setupNavBar()
+        
+		let navController = UINavigationController(rootViewController: AdminController())
+		navController.navigationBar.tintColor = .black
+		
+		window?.rootViewController = navController
+		
+		if UserDefaults.standard.object(forKey: "user") == nil {
+			let navController = UINavigationController(rootViewController: LoginController())
+            navController.modalPresentationStyle = .fullScreen
+            DispatchQueue.main.async {
+				self.window?.rootViewController?.present(navController, animated: true, completion: nil)
+			}
+		}
+        window?.makeKeyAndVisible()
+    }
+    
+    func setupNavBar() {
+        let navAppearance = UINavigationBarAppearance()
+        navAppearance.configureWithOpaqueBackground()
+        navAppearance.titleTextAttributes = [.foregroundColor: UIColor.black]
+        navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.black]
+        UINavigationBar.appearance().standardAppearance = navAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().tintColor = .black
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
