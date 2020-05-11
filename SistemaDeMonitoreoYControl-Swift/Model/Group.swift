@@ -35,7 +35,7 @@ struct GrupoPersonalizado: Decodable {
     let idGruposUsuariosSys: String
     let idServicio: String?
     let nombre: String
-    let integrantes: [String]
+    let integrantes: [String]?
 	
 	var isSelected: Bool?
     

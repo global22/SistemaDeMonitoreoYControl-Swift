@@ -24,17 +24,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
 		let navController = UINavigationController(rootViewController: AdminController())
 		navController.navigationBar.tintColor = .black
-		
 		window?.rootViewController = navController
 		
-		if UserDefaults.standard.object(forKey: "user") == nil {
-			let navController = UINavigationController(rootViewController: LoginController())
-            navController.modalPresentationStyle = .fullScreen
-            DispatchQueue.main.async {
-				self.window?.rootViewController?.present(navController, animated: true, completion: nil)
-			}
+        if UserDefaults.standard.object(forKey: Constants.usuario) == nil {
+            perform(#selector(logout), with: nil, afterDelay: 0)
 		}
         window?.makeKeyAndVisible()
+    }
+    
+    @objc func logout() {
+        let navController = UINavigationController(rootViewController: LoginController())
+        navController.modalPresentationStyle = .fullScreen
+        self.window?.rootViewController?.present(navController, animated: true, completion: nil)
     }
     
     func setupNavBar() {

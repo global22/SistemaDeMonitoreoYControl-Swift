@@ -18,6 +18,8 @@ class DependenciasController: UICollectionViewController {
     
     var dependencias = [AtributosDependencia]()
     
+    var loginController: LoginController?
+    
     // MARK: - Init
     
     init() {
@@ -91,6 +93,11 @@ class DependenciasController: UICollectionViewController {
         let dependencia = dependencias[indexPath.item]
         let controller = SubDependenciasController()
         controller.dependencia = dependencia
+        controller.dismissHandler = { [weak self] in
+            self?.dismiss(animated: true) {
+                self?.loginController?.reload()
+            }
+        }
         navigationController?.pushViewController(controller, animated: true)
     }
 }

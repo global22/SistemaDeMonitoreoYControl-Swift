@@ -18,6 +18,8 @@ protocol GruposViewDelegate: class {
     func recargarGruposView(_ gruposView: GruposView)
 }
 
+// MARK: - Class GruposView
+
 class GruposView: BaseCardView {
 	
 	// MARK: - Properties
@@ -125,6 +127,32 @@ class GruposView: BaseCardView {
 	func reload() {
 		tableView.reloadData()
 	}
+    
+    func filtrarIntegrantesDeGrupoAutomatico(_ grupo: GrupoAutomatico) -> [Integrante] {
+        var integrantesFiltrados = [Integrante]()
+        grupo.integrantes.forEach { (idIntegrante) in
+            self.integrantes.forEach { (integrante) in
+                if integrante.idUsuarioMovil == idIntegrante && integrante.getLat() != 0.0 {
+                    integrantesFiltrados.append(integrante)
+                }
+            }
+        }
+        return integrantesFiltrados
+    }
+    
+    func filtrarIntegrantesDeGrupoPersonalizado(_ grupo: GrupoPersonalizado) -> [Integrante] {
+        var integrantesFiltrados = [Integrante]()
+        if let integrantesGrupo = grupo.integrantes {
+            integrantesGrupo.forEach { (idIntegrante) in
+                self.integrantes.forEach { (integrante) in
+                    if integrante.idUsuarioMovil == idIntegrante && integrante.getLat() != 0.0 {
+                        integrantesFiltrados.append(integrante)
+                    }
+                }
+            }
+        }
+        return integrantesFiltrados
+    }
 	
 	func mostrarGruposAutomaticos(_ mostrar: Bool) {
 		for i in 0..<gruposAutomaticos.count {
@@ -143,43 +171,35 @@ class GruposView: BaseCardView {
 	
 	func mostrarGruposPersonalizados(_ mostrar: Bool) {
 		for i in 0..<gruposPersonalizados.count {
-			if gruposPersonalizados[i].integrantes.isEmpty {
-				gruposPersonalizados[i].isSelected = mostrar
-			}
-			for j in 0..<gruposPersonalizados[i].integrantes.count {
-				for k in 0..<integrantesActivos.count {
-					if integrantesActivos[k].idUsuarioMovil == gruposPersonalizados[i].integrantes[j] {
-						gruposPersonalizados[i].isSelected = mostrar
-					}
-				}
-			}
+            if let integrantes = gruposPersonalizados[i].integrantes {
+                if integrantes.isEmpty {
+                    gruposPersonalizados[i].isSelected = mostrar
+                }
+                for j in 0..<integrantes.count {
+                    for k in 0..<integrantesActivos.count {
+                        if integrantesActivos[k].idUsuarioMovil == integrantes[j] {
+                            gruposPersonalizados[i].isSelected = mostrar
+                        }
+                    }
+                }
+            }
 		}
 	}
 	
 	func integrantesActivos<T>(deGrupos grupos: T) -> [Integrante] {
 		var integrantesFiltrados = [Integrante]()
 		if let grupos = grupos as? [GrupoPersonalizado] {
-			for i in 0..<grupos.count {
-				for j in 0..<grupos[i].integrantes.count {
-					for k in 0..<integrantesActivos.count {
-						if integrantesActivos[k].idUsuarioMovil == grupos[i].integrantes[j] {
-							let integrante = integrantesActivos[k]
-							integrantesFiltrados.append(integrante)
-						}
-					}
-				}
-			}
+            grupos.forEach { (grupo) in
+                self.filtrarIntegrantesDeGrupoPersonalizado(grupo).forEach {
+                    integrantesFiltrados.append($0)
+                }
+            }
 		} else if let grupos = grupos as? [GrupoAutomatico] {
-			for i in 0..<grupos.count {
-				for j in 0..<grupos[i].integrantes.count {
-					for k in 0..<integrantesActivos.count {
-						if integrantesActivos[k].idUsuarioMovil == grupos[i].integrantes[j] {
-							let integrante = integrantesActivos[k]
-							integrantesFiltrados.append(integrante)
-						}
-					}
-				}
-			}
+            grupos.forEach { (grupo) in
+                self.filtrarIntegrantesDeGrupoAutomatico(grupo).forEach {
+                    integrantesFiltrados.append($0)
+                }
+            }
 		}
 		return integrantesFiltrados
 	}
@@ -187,27 +207,17 @@ class GruposView: BaseCardView {
 	func integrantesActivos<T>(deLosGrupos grupos: T) -> [String] {
 		var integrantesFiltrados = [String]()
 		if let grupos = grupos as? [GrupoPersonalizado] {
-			for i in 0..<grupos.count {
-				for j in 0..<grupos[i].integrantes.count {
-					for k in 0..<integrantesActivos.count {
-						if integrantesActivos[k].idUsuarioMovil == grupos[i].integrantes[j] {
-							let integrante = integrantesActivos[k].idUsuarioMovil
-							integrantesFiltrados.append(integrante)
-						}
-					}
-				}
-			}
+            grupos.forEach { (grupo) in
+                self.filtrarIntegrantesDeGrupoPersonalizado(grupo).forEach({
+                    integrantesFiltrados.append($0.idUsuarioMovil)
+                })
+            }
 		} else if let grupos = grupos as? [GrupoAutomatico] {
-			for i in 0..<grupos.count {
-				for j in 0..<grupos[i].integrantes.count {
-					for k in 0..<integrantesActivos.count {
-						if integrantesActivos[k].idUsuarioMovil == grupos[i].integrantes[j] {
-							let integrante = integrantesActivos[k].idUsuarioMovil
-							integrantesFiltrados.append(integrante)
-						}
-					}
-				}
-			}
+            grupos.forEach { (grupo) in
+                self.filtrarIntegrantesDeGrupoAutomatico(grupo).forEach({
+                    integrantesFiltrados.append($0.idUsuarioMovil)
+                })
+            }
 		}
 		return integrantesFiltrados
 	}
@@ -215,21 +225,9 @@ class GruposView: BaseCardView {
 	func filtrarIntegrantesPorGrupo<T>(grupo: T) -> [Integrante] {
 		var integrantesFiltrados = [Integrante]()
 		if let grupo = grupo as? GrupoPersonalizado {
-			for i in 0..<grupo.integrantes.count {
-				for j in 0..<integrantes.count {
-					if integrantes[j].idUsuarioMovil == grupo.integrantes[i] {
-						integrantesFiltrados.append(integrantes[j])
-					}
-				}
-			}
+            integrantesFiltrados = filtrarIntegrantesDeGrupoPersonalizado(grupo)
 		} else if let grupo = grupo as? GrupoAutomatico {
-			for i in 0..<grupo.integrantes.count {
-				for j in 0..<integrantes.count {
-					if integrantes[j].idUsuarioMovil == grupo.integrantes[i] {
-						integrantesFiltrados.append(integrantes[j])
-					}
-				}
-			}
+            integrantesFiltrados = filtrarIntegrantesDeGrupoAutomatico(grupo)
 		}
 		return integrantesFiltrados
 	}
@@ -237,21 +235,13 @@ class GruposView: BaseCardView {
 	func filtrarIntegrantesActivos<T>(porGrupo grupo: T) -> [String] {
 		var integrantesFiltrados = [String]()
 		if let grupo = grupo as? GrupoPersonalizado {
-			for i in 0..<grupo.integrantes.count {
-				for j in 0..<integrantes.count {
-					if integrantes[j].idUsuarioMovil == grupo.integrantes[i] && integrantes[j].getLat() != 0.0 {
-						integrantesFiltrados.append(integrantes[j].idUsuarioMovil)
-					}
-				}
-			}
+            filtrarIntegrantesDeGrupoPersonalizado(grupo).forEach {
+                integrantesFiltrados.append($0.idUsuarioMovil)
+            }
 		} else if let grupo = grupo as? GrupoAutomatico {
-			for i in 0..<grupo.integrantes.count {
-				for j in 0..<integrantes.count {
-					if integrantes[j].idUsuarioMovil == grupo.integrantes[i] && integrantes[j].getLat() != 0.0 {
-						integrantesFiltrados.append(integrantes[j].idUsuarioMovil)
-					}
-				}
-			}
+            filtrarIntegrantesDeGrupoAutomatico(grupo).forEach {
+                integrantesFiltrados.append($0.idUsuarioMovil)
+            }
 		}
 		return integrantesFiltrados
 	}
@@ -259,21 +249,9 @@ class GruposView: BaseCardView {
 	func filtrarIntegrantesActivos<T>(porGrupo grupo: T) -> [Integrante] {
 		var integrantesFiltrados = [Integrante]()
 		if let grupo = grupo as? GrupoPersonalizado {
-			for i in 0..<grupo.integrantes.count {
-				for j in 0..<integrantes.count {
-					if integrantes[j].idUsuarioMovil == grupo.integrantes[i] && integrantes[j].getLat() != 0.0 {
-						integrantesFiltrados.append(integrantes[j])
-					}
-				}
-			}
+            integrantesFiltrados = filtrarIntegrantesDeGrupoPersonalizado(grupo)
 		} else if let grupo = grupo as? GrupoAutomatico {
-			for i in 0..<grupo.integrantes.count {
-				for j in 0..<integrantes.count {
-					if integrantes[j].idUsuarioMovil == grupo.integrantes[i] && integrantes[j].getLat() != 0.0 {
-						integrantesFiltrados.append(integrantes[j])
-					}
-				}
-			}
+			integrantesFiltrados = filtrarIntegrantesDeGrupoAutomatico(grupo)
 		}
 		return integrantesFiltrados
 	}
@@ -282,7 +260,7 @@ class GruposView: BaseCardView {
 		let integrantes: [Integrante] = filtrarIntegrantesActivos(porGrupo: grupo)
 		var integrantesMapa = [IntegranteMapa]()
 		integrantes.forEach {
-			let integranteMapa = IntegranteMapa(nombre: $0.nombre, apellidoPaterno: $0.apellidoPaterno, apellidoMaterno: $0.apellidoMaterno, latitud: $0.getLat(), longitud: $0.getLng(), icon: $0.icon, idUsuario: $0.idUsuarioMovil, estaEnRuta: true, fecha: $0.gps.fecha ?? "", hora: $0.gps.hora ?? "", servicio: $0.aliasServicio, img: $0.img)
+            let integranteMapa = IntegranteMapa(nombre: $0.nombre, apellidoPaterno: $0.apellidoPaterno, apellidoMaterno: $0.apellidoMaterno, latitud: $0.getLat(), longitud: $0.getLng(), icon: $0.icon, idUsuario: $0.idUsuarioMovil, estaEnRuta: true, fecha: $0.gps.fecha ?? "", hora: $0.gps.hora ?? "", servicio: $0.aliasServicio, img: $0.img, firebase: $0.FireBaseKey ?? "")
 			integrantesMapa.append(integranteMapa)
 		}
 		return integrantesMapa
@@ -292,7 +270,7 @@ class GruposView: BaseCardView {
 		let integrantes: [Integrante] = integrantesActivos(deGrupos: grupos)
 		var integrantesMapa = [IntegranteMapa]()
 		integrantes.forEach {
-			let integranteMapa = IntegranteMapa(nombre: $0.nombre, apellidoPaterno: $0.apellidoPaterno, apellidoMaterno: $0.apellidoMaterno, latitud: $0.getLat(), longitud: $0.getLng(), icon: $0.icon, idUsuario: $0.idUsuarioMovil, estaEnRuta: true, fecha: $0.gps.fecha ?? "", hora: $0.gps.hora ?? "", servicio: $0.aliasServicio, img: $0.img)
+            let integranteMapa = IntegranteMapa(nombre: $0.nombre, apellidoPaterno: $0.apellidoPaterno, apellidoMaterno: $0.apellidoMaterno, latitud: $0.getLat(), longitud: $0.getLng(), icon: $0.icon, idUsuario: $0.idUsuarioMovil, estaEnRuta: true, fecha: $0.gps.fecha ?? "", hora: $0.gps.hora ?? "", servicio: $0.aliasServicio, img: $0.img, firebase: $0.FireBaseKey ?? "")
 			integrantesMapa.append(integranteMapa)
 		}
 		return integrantesMapa

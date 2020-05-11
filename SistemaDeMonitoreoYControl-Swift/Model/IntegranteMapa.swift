@@ -25,9 +25,10 @@ class IntegranteMapa: NSObject, MKAnnotation {
 	var hora: String
 	var servicio: String
 	var img: String
+    var firebase: String
 	var muestraRuta: Bool = false
 	
-	init(nombre: String, apellidoPaterno: String, apellidoMaterno: String, latitud: Double, longitud: Double, icon: String, idUsuario: String, estaEnRuta: Bool, fecha: String, hora: String, servicio: String, img: String) {
+    init(nombre: String, apellidoPaterno: String, apellidoMaterno: String, latitud: Double, longitud: Double, icon: String, idUsuario: String, estaEnRuta: Bool, fecha: String, hora: String, servicio: String, img: String, firebase: String) {
 		self.nombre = nombre
 		self.apellidoPaterno = apellidoPaterno
 		self.apellidoMaterno = apellidoMaterno
@@ -42,6 +43,7 @@ class IntegranteMapa: NSObject, MKAnnotation {
 		self.img = img
         self.coordinate = .init(latitude: latitud, longitude: longitud)
         self.title = "\(nombre)"
+        self.firebase = firebase
         super.init()
         
 	}

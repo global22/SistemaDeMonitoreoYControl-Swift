@@ -20,7 +20,6 @@ class LoginController: BaseViewController {
     lazy var loginButton = UIButton(title: "Entrar", titleColor: .white, font: .boldSystemFont(ofSize: 18), backgroundColor: #colorLiteral(red: 0.8549019608, green: 0.1607843137, blue: 0.1098039216, alpha: 1), target: self, action: #selector(handleLogin))
     let errorLabel = UILabel(text: "Usuario y/o contraseña incorrectos", font: .systemFont(ofSize: 14), textColor: .white, textAlignment: .center, numberOfLines: 0)
     var formContainerYAnchor: NSLayoutConstraint!
-    let backgroundImage = UIImageView(image: #imageLiteral(resourceName: "background.jpg"), contentMode: .scaleAspectFill)
     lazy var backgroundTap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
     
     // MARK: - Life Cycle
@@ -43,16 +42,7 @@ class LoginController: BaseViewController {
     // MARK: - Helper Functions
     
     fileprivate func setupViewComponents() {
-        let imageView = UIImageView(image: #imageLiteral(resourceName: "sedena360.png"))
-        
-        navigationItem.setHidesBackButton(true, animated: false)
-        navigationItem.leftBarButtonItem = .init(customView: imageView.withSize(.init(width: 200, height: 40)))
-        
-        navigationItem.title = "Sistema de Monitoreo y Control"
         navigationItem.rightBarButtonItem = .init(image: #imageLiteral(resourceName: "settings"), style: .plain, target: self, action: #selector(handleSettings))
-        
-        view.addSubview(backgroundImage)
-        backgroundImage.fillSuperview()
         
         view.addSubview(formContainer)
         formContainerYAnchor = formContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor)
@@ -104,12 +94,31 @@ class LoginController: BaseViewController {
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
     }
+    
+    fileprivate func mostrarDependencias() {
+        let controller = DependenciasController()
+        controller.loginController = self
+        let navController = UINavigationController(rootViewController: controller)
+        present(navController, animated: true, completion: nil)
+    }
+    
+    fileprivate func mostrarAlerta() {
+        let alertController = UIAlertController(title: "Dependencia no seleccionada.", message: "Por favor seleccione una dependencia a la que requiere accesar.", preferredStyle: .alert)
+        alertController.addAction(.init(title: "Ok", style: .default, handler: { (_) in
+            self.mostrarDependencias()
+        }))
+        present(alertController, animated: true, completion: nil)
+    }
     // MARK: - Selectors
     
     @objc fileprivate func handleLogin() {
         let hud = JGProgressHUD(style: .dark)
-        hud.textLabel.text = "Iniciando sesión"
-        hud.show(in: view)
+        if UserDefaults.standard.object(forKey: Constants.dependencia) == nil {
+            mostrarAlerta()
+        } else {
+            hud.textLabel.text = "Iniciando sesión"
+            hud.show(in: view)
+        }
         
         guard let user = userTextField.text else {
             errorLabel.isHidden = false
@@ -128,7 +137,7 @@ class LoginController: BaseViewController {
             case .failure:
                 self.errorLabel.isHidden = false
             case .success(let user):
-                UserDefaults.standard.set(user.id, forKey: "user")
+                UserDefaults.standard.set(user.id, forKey: Constants.usuario)
                 self.navigationController?.pushViewController(AdminController(), animated: true)
             }
         }
@@ -154,10 +163,7 @@ class LoginController: BaseViewController {
     }
     
     @objc fileprivate func handleSettings(_ sender: UIButton) {
-        let controller = DependenciasController()
-        let navController = UINavigationController(rootViewController: controller)
-        present(navController, animated: true, completion: nil)
-        
+        mostrarDependencias()
     }
 }
 

@@ -9,12 +9,14 @@
 import UIKit
 import LBTATools
 import SDWebImage
+import JGProgressHUD
 
 // MARK: - Protocol IntegranteMapaDelegate
 
 protocol IntegranteMapaDelegate: class {
 	func integranteMapaView(_ integranteMapaView: IntegranteMapaView, mostroLaRutaDelIntegrante integrante: IntegranteMapa)
     func integranteMapaView(_ integranteMapaView: IntegranteMapaView, ocultoLaRutaDelIntegrante integrante: IntegranteMapa)
+    func integranteMapaView(_ integranteMapaView: IntegranteMapaView, llamoAlIntegrante integrante: IntegranteMapa, con credenciales: CredencialesOperador)
 }
 
 class IntegranteMapaView: UIView {
@@ -62,7 +64,7 @@ class IntegranteMapaView: UIView {
 	let horaLabel = UILabel(text: "Hora: 14:29:30", font: .boldSystemFont(ofSize: 12), textColor: .black)
 	lazy var mensajeButton = UIButton(title: "Mensaje", titleColor: #colorLiteral(red: 0, green: 0.6710000038, blue: 0.9330000281, alpha: 1), font: .systemFont(ofSize: 12), target: self, action: nil)
 	lazy var rutaButton = UIButton(title: "Ver Ruta", titleColor: #colorLiteral(red: 0, green: 0.6710000038, blue: 0.9330000281, alpha: 1), font: .systemFont(ofSize: 12), target: self, action: #selector(verRuta))
-	lazy var llamarButton = UIButton(title: "Llamar", titleColor: #colorLiteral(red: 0.1570000052, green: 0.6549999714, blue: 0.2709999979, alpha: 1), font: .systemFont(ofSize: 12), target: self, action: nil)
+    lazy var llamarButton = UIButton(title: "Llamar", titleColor: #colorLiteral(red: 0.1570000052, green: 0.6549999714, blue: 0.2709999979, alpha: 1), font: .systemFont(ofSize: 12), target: self, action: #selector(llamarIntegrante))
 	
 	// MARK: - Init
 	
@@ -124,6 +126,19 @@ class IntegranteMapaView: UIView {
         }
     }
 	
+    func enviarNotificacion(firebaseKey: String, credenciales: CredencialesOperador) {
+        Service.shared.solicitarLlamada(firebaseKey: firebaseKey, credenciales: credenciales) { (res) in
+            switch res {
+            case .failure(_):
+                break
+            case .success(let firebaseResponse):
+                if firebaseResponse.success == 1 {
+//                    self.delegate?.integranteMapaView(self, llamoAlIntegrante: self.integranteMapa, con: credenciales)
+                }
+            }
+        }
+    }
+    
 	// MARK: - Selectors
 	
 	@objc func verRuta(_ sender: UIButton) {
@@ -133,6 +148,17 @@ class IntegranteMapaView: UIView {
 			delegate?.integranteMapaView(self, mostroLaRutaDelIntegrante: integranteMapa)
 		}
 	}
+    
+    @objc func llamarIntegrante(_ sender: UIButton) {
+        Service.shared.generarCredenciales { (res) in
+            switch res {
+            case .failure(_):
+                break
+            case .success(let credenciales):
+                self.enviarNotificacion(firebaseKey: self.integranteMapa.firebase, credenciales: credenciales)
+            }
+        }
+    }
 	
 }
 

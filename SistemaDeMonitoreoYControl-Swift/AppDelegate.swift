@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         window?.rootViewController = navController
         
-        if UserDefaults.standard.object(forKey: "user") == nil {
+        if UserDefaults.standard.object(forKey: Constants.usuario) == nil {
             let navController = UINavigationController(rootViewController: LoginController())
             DispatchQueue.main.async {
                 self.window?.rootViewController?.present(navController, animated: true, completion: nil)

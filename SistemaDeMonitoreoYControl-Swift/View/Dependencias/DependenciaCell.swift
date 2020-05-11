@@ -21,6 +21,8 @@ class DependenciaCell: UICollectionViewCell {
     
     let nombreLabel = UILabel(text: "Nombre", font: .boldSystemFont(ofSize: 20), textColor: .white, textAlignment: .center, numberOfLines: 0)
     
+    let blurView = DarkBlurView()
+    
     // MARK: - Init
     
     override init(frame: CGRect) {
@@ -40,6 +42,9 @@ class DependenciaCell: UICollectionViewCell {
         
         addSubview(nombreLabel)
         nombreLabel.centerInSuperview()
+        
+        insertSubview(blurView, at: 0)
+        blurView.fillSuperview()
     }
     
 }

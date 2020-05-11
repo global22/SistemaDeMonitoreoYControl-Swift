@@ -26,6 +26,7 @@ class LlamadaController: BaseViewController {
     }
     
     let informacionController = InformacionController()
+    let chatController = ChatController()
     
     var controlesLlamadaView = ControlesLlamadaView()
     var controlesLlamadaViewHeightAnchor: NSLayoutConstraint!
@@ -39,13 +40,17 @@ class LlamadaController: BaseViewController {
     
     lazy var llamadasCollectionView: UICollectionView = {
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
-        collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: llamadaCellId)
+        collectionView.register(LlamadaCell.self, forCellWithReuseIdentifier: llamadaCellId)
         collectionView.dataSource = self
         collectionView.delegate = self
         return collectionView
     }()
     
     var session: OTSession!
+    
+    var subscriber: OTSubscriber!
+    
+    var usuariosChat = [UsuarioChat]()
     
     // MARK: - Life Cycle
     
@@ -54,6 +59,10 @@ class LlamadaController: BaseViewController {
         
         setupViewComponents()
         setupTapGesture()
+        
+        chatController.sendMessage = { [weak self] string in
+            self?.sendTextMessage(text: string)
+        }
     }
     
     // MARK: - Helpers
@@ -130,6 +139,22 @@ class LlamadaController: BaseViewController {
         basicAnimation(completion: completion)
     }
     
+    func sendTextMessage(text: String) {
+        let fechaFormatter = DateFormatter()
+        fechaFormatter.dateFormat = "YYYY-MM-dd"
+        let horaFormatter = DateFormatter()
+        horaFormatter.dateFormat = "HH:mm:ss"
+        let mensajeString = "{\"value\":\"\(text)\",\"fecha\":\"\(fechaFormatter.string(from: Date()))\",\"hora\":\"\(horaFormatter.string(from: Date()))\",\"idUsuario\":\"\(chatController.usuarioChat.senderId)\"}"
+        session.signal(withType: "msg-signal", string: mensajeString, connection: nil, error: nil)
+    }
+    
+    func sendFirstMessage() {
+        let mensaje = "Se ha unido al chat"
+        let mensajeChat = MensajeChat(text: mensaje, usuario: chatController.usuarioChat, idMensaje: UUID().uuidString, fecha: Date())
+        chatController.insertMessage(mensajeChat)
+        sendTextMessage(text: mensaje)
+    }
+    
     // MARK: - Selectors
     
     @objc fileprivate func backgroundTap(_ sender: UITapGestureRecognizer) {
@@ -169,7 +194,25 @@ extension LlamadaController: LlamadaDelegate {
     }
     
     func susbcribeToStream(_ stream: OTStream) {
+        var error: OTError?
+        if let error = error {
+            print("Error al suscribirse:", error)
+        }
+        var index = 0
+        var id: String!
+        var nombre: String!
+        for i in 0..<llamadas.count {
+            if llamadas[i].credenciales.sesion == stream.session.sessionId {
+                id = llamadas[i].usuario.idUsuariosMovil
+                nombre = "\(llamadas[i].usuario.nombre) \(llamadas[i].usuario.apellidoPaterno) \(llamadas[i].usuario.apellidoMaterno)"
+                session.subscribe(llamadas[i].subscriber!, error: &error)
+                index = i
+            }
+        }
+        let usuarioChat = UsuarioChat(senderId: id, displayName: nombre)
+        usuariosChat.append(usuarioChat)
         
+        llamadasCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
     }
     
     func unsubscribeToStream(_ stream: OTStream) {
@@ -190,7 +233,7 @@ extension LlamadaController: LlamadaDelegate {
         
         if let publisherView = publisher.view {
             view.addSubview(publisherView)
-            publisherView.anchor(top: nil, leading: nil, bottom: view.safeAreaLayoutGuide.bottomAnchor, trailing: view.trailingAnchor, padding: .init(top: 0, left: 0, bottom: 8, right: 8), size: .init(width: 150, height: 150))
+            publisherView.anchor(top: nil, leading: nil, bottom: view.safeAreaLayoutGuide.bottomAnchor, trailing: view.trailingAnchor, padding: .init(top: 0, left: 0, bottom: 8, right: 8), size: .init(width: 200, height: 200))
         }
     }
 }
@@ -231,7 +274,12 @@ extension LlamadaController: UIGestureRecognizerDelegate {
 
 extension LlamadaController: AccionesLlamadaDelegate {
     func mostrarChat() {
-        print("Chat")
+        let navController = UINavigationController(rootViewController: chatController)
+        navController.modalPresentationStyle = .formSheet
+        if #available(iOS 13, *)  {
+            navController.isModalInPresentation = true
+        }
+        present(navController, animated: true, completion: nil)
     }
     
     func mostrarMapa() {
@@ -254,6 +302,7 @@ extension LlamadaController: OTSessionDelegate {
     func sessionDidConnect(_ session: OTSession) {
         print("sessionDidConnect(_:)")
         connectPublisher(session: session)
+        sendFirstMessage()
     }
     
     func sessionDidDisconnect(_ session: OTSession) {
@@ -266,11 +315,37 @@ extension LlamadaController: OTSessionDelegate {
     
     func session(_ session: OTSession, streamCreated stream: OTStream) {
         print("session(_:streamCreated:)")
+        susbcribeToStream(stream)
     }
     
     func session(_ session: OTSession, streamDestroyed stream: OTStream) {
         print("session(_:streamDestroyed:)")
+        if presentedViewController != nil {
+            presentedViewController?.dismiss(animated: true, completion: nil)
+        }
         dismiss(animated: true, completion: nil)
+    }
+    
+    func session(_ session: OTSession, receivedSignalType type: String?, from connection: OTConnection?, with string: String?) {
+        if session.connection?.connectionId != connection?.connectionId {
+            guard let mensaje = string else { return }
+            if mensaje.contains("value") {
+                guard let data = mensaje.data(using: .utf8) else { return }
+                do {
+                    let mensajeRecibido = try JSONDecoder().decode(Mensaje.self, from: data)
+                    usuariosChat.forEach {
+                        if $0.senderId == mensajeRecibido.idUsuario {
+                            let msj = MensajeChat(text: mensajeRecibido.value, usuario: $0, idMensaje: UUID().uuidString, fecha: Date())
+                            chatController.insertMessage(msj)
+                        }
+                    }
+                    print(mensajeRecibido)
+                } catch {
+                    print("Error al decodificar mensaje recibido:", error)
+                }
+            }
+            
+        }
     }
 }
 
@@ -282,6 +357,18 @@ extension LlamadaController: OTPublisherDelegate {
     }
 }
 
+// MARK: - OTSubscriberDelegate
+
+extension LlamadaController: OTSubscriberDelegate {
+    func subscriberDidConnect(toStream subscriber: OTSubscriberKit) {
+        print("subscriberDidConnect(toStream:)")
+    }
+    
+    func subscriber(_ subscriber: OTSubscriberKit, didFailWithError error: OTError) {
+        print("subscriber(_:didFailWithError:)", error)
+    }
+}
+
 // MARK: - UICollectionViewDataSource
 
 extension LlamadaController: UICollectionViewDataSource {
@@ -290,8 +377,8 @@ extension LlamadaController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: llamadaCellId, for: indexPath)
-        cell.backgroundColor = .systemBlue
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: llamadaCellId, for: indexPath) as! LlamadaCell
+        cell.llamada = llamadas[indexPath.item]
         return cell
     }
 }
@@ -300,7 +387,7 @@ extension LlamadaController: UICollectionViewDataSource {
 
 extension LlamadaController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return.init(width: view.frame.width, height: view.frame.height)
+        return.init(width: view.frame.width - 16, height: view.safeAreaLayoutGuide.layoutFrame.height - 16)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {

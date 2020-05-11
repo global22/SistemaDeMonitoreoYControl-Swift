@@ -31,6 +31,7 @@ struct InformacionIntegrante: Decodable {
 	let aliasServicio: String?
 	let fireBaseKey: String?
 	let fechasRutas: [Fecha]?
+    var usuarioChat: UsuarioChat?
 	
 	enum CodingKeys: String, CodingKey {
 		case img = "img"

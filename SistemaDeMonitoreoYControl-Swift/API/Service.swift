@@ -13,9 +13,6 @@ class Service: NSObject {
     
     static let shared = Service()
     
-    let baseUrl = "https://sedena360.ml/SEDENA"
-    let socketBaseUrl = "wss://viict.guardianacional360.ml/cuartelgeneral"//"wss://sedena360.ml/SEDENA" 
-    
     func obtenerDependencias(completion: @escaping(Result<Dependencia>) -> ()) {
         let url = "https://plataforma911.ml/CONTROLADOR/API/JSON/RegistroNiveles"
         Alamofire.request(url)
@@ -42,6 +39,10 @@ class Service: NSObject {
     func login(user: String, password: String, completion: @escaping(Result<User>) -> ()) {
         let params = ["Usuario": user, "Password": password]
         
+        guard let baseUrl = UserDefaults.standard.object(forKey: Constants.baseUrl) else {
+            return
+        }
+        
         let url = "\(baseUrl)/login"
         Alamofire.request(url, method: .post, parameters: params, encoding: JSONEncoding.default)
             .validate(statusCode: 200..<500)
@@ -54,7 +55,7 @@ class Service: NSObject {
                 guard let data = respData.data else { return }
                 do {
                     let user = try JSONDecoder().decode(User.self, from: data)
-                    UserDefaults.standard.setValue(user.id, forKey: "user")
+                    UserDefaults.standard.setValue(user.id, forKey: Constants.usuario)
                     completion(.success(user))
                 } catch {
                     completion(.failure(error))
@@ -65,6 +66,9 @@ class Service: NSObject {
     func getGroups(userId: String, completion: @escaping(Result<Group>) -> ()) {
         let params = ["idUsuarioSys": userId]
         
+        guard let baseUrl = UserDefaults.standard.object(forKey: Constants.baseUrl) else {
+            return
+        }
         let url = "\(baseUrl)/GruposPersonalizados"
         
         Alamofire.request(url, method: .post, parameters: params, encoding: JSONEncoding.default)
@@ -78,9 +82,6 @@ class Service: NSObject {
                 guard let data = respData.data else { return }
                 do {
                     let data = try JSONDecoder().decode(Group.self, from: data)
-//					data.integrantes.forEach {
-//						print("\($0.nombre) Lat: \($0.getLat()) Ult Lat: \($0.getUltLat())")
-//					}
                     completion(.success(data))
                 } catch {
                     print("Failed to fetch group:", error)
@@ -193,5 +194,89 @@ class Service: NSObject {
             print("Error al decodificar la llamada entrante:", error)
             completion(.failure(error))
         }
+    }
+    
+    func generarCredenciales(completion: @escaping(Result<CredencialesOperador>) -> ()) {
+        let url = "http://plataforma911.ml/CONTROLADOR/API/Credenciales"
+        Alamofire.request(url, method: .get)
+            .responseData { (dataResp) in
+                if let error = dataResp.error {
+                    print("Error al generar las credenciales:", error)
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let data = dataResp.data else { return }
+                do {
+                    let credenciales = try JSONDecoder().decode(CredencialesOperador.self, from: data)
+                    completion(.success(credenciales))
+                } catch {
+                    print("Error al decodificar las credenciales:", error)
+                    completion(.failure(error))
+                }
+        }
+    }
+    
+    /// Función que se encarga de solicitar una llamada por parte del operador a cualquiera de los integrantes de la dependencia en la que se encuentra.
+    /// - Parameters:
+    ///   - firebaseKey: Es la llave de Firebase asociada al integrante al que se requiere llamar. Es importante ya que mediante esta llave Firebase le notifica al integrante que se le esta solicitando una llamada.
+    ///   - credenciales: Son las credenciales de OpenTok del operador previamente generadas.
+    ///   - completion: Un bloque de completado que notificará si se realizó de manera correcta la solicitud o si ésta tuvo un fallo.
+    /// - Returns: No tiene valor de retorno.
+    func solicitarLlamada(firebaseKey: String, credenciales: CredencialesOperador, completion: @escaping(Result<FirebaseResponse>) -> ()) {
+        guard let url = URL(string: "https://fcm.googleapis.com/fcm/send") else { return }
+        let headers = ["Content-Type": "application/json",
+                       "Authorization": "key=\(Constants.firebaseAuth)"]
+        
+        let hora = DateFormatter.hourFormatter.string(from: Date())
+        print(hora)
+        let fecha = DateFormatter.dateFormatter.string(from: Date())
+        print(fecha)
+        
+        let dataBody: [String: Any] = ["apikey": credenciales.apikey,
+                                       "fecha": fecha,
+                                       "hora": hora,
+                                       "idNotificacion": "000", //la proporciona plataforma
+                                       "idsesion": credenciales.idsesion,
+                                       "sound": "default",
+                                       "text": "\(UserDefaults.standard.object(forKey: Constants.dependencia) ?? "")", //dependencia desde donde se origino llamada
+                                       "title": "\(UserDefaults.standard.object(forKey: Constants.dependencia) ?? "") solicita video",
+                                       "token": credenciales.token,
+                                       "type": "3"]
+        
+        let params: [String: Any] = ["to": "fe7spefMBAw:APA91bGUbRSzp-ScB1W2nAIFaaiOzGQw-rCZjQ705AVBC65TD0ZiWrpN1oCsZmSKde0_mdsuOjJCBtJFiW363uaLodQGvfEtBndsPg0EJHvfRInvEuZ6LxFXyUAJK808lv4NMvO67-IS",
+                                    "priority": "high",
+                                    "content-available": true,
+                                    "notification": ["title": "TITLE", "body": "BODY"]]
+                                    // notification: [title: String, body: String]
+//                                    "data": dataBody]
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.allHTTPHeaderFields = headers
+        
+        do {
+            let data = try JSONSerialization.data(withJSONObject: params, options: .sortedKeys)
+            request.httpBody = data
+        } catch {
+            print("Error al generar parametros del POST:", error)
+        }
+ 
+        URLSession.shared.dataTask(with: request) { (data, resp, error) in
+            if let error = error {
+                print("Error al obtener la autorización:", error)
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else { return }
+            do {
+                let firebaseResponse = try JSONDecoder().decode(FirebaseResponse.self, from: data)
+                completion(.success(firebaseResponse))
+            } catch {
+                print("Error al decodificar la respuesta:", error)
+                completion(.failure(error))
+            }
+        }.resume()
     }
 }

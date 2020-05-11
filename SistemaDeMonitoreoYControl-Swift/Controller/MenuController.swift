@@ -51,10 +51,16 @@ class MenuController: UIViewController {
     // MARK: - Selectors
     
     @objc fileprivate func handleSignout() {
-        let navController = UINavigationController(rootViewController: LoginController())
+        let loginController = LoginController()
+        let navController = UINavigationController(rootViewController: loginController)
         navController.modalPresentationStyle = .fullScreen
         present(navController, animated: true) {
-            UserDefaults.standard.removeObject(forKey: "user")
+            UserDefaults.standard.removeObject(forKey: Constants.usuario)
+            UserDefaults.standard.removeObject(forKey: Constants.baseUrl)
+            UserDefaults.standard.removeObject(forKey: Constants.dependencia)
+            UserDefaults.standard.removeObject(forKey: Constants.baseSocketUrl)
+            UserDefaults.standard.removeObject(forKey: Constants.urlImagenDependencia)
+            loginController.reload()
         }
     }
     
@@ -88,6 +94,9 @@ extension MenuController: UITableViewDelegate, UITableViewDataSource {
             dismiss(animated: true, completion: nil)
         case 1:
             navigationController?.pushViewController(MonitoreoUnidadesController(), animated: true)
+            dismiss(animated: true, completion: nil)
+        case 2:
+            navigationController?.pushViewController(BusquedaReporteController(), animated: true)
             dismiss(animated: true, completion: nil)
         default:
             break

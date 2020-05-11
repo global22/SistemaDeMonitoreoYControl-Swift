@@ -41,6 +41,8 @@ struct AtributosDependencia: Decodable {
     var url: String
     var nivel: [String: Nivel]
     
+    var socketUrl: String?
+    
     private struct CK: CodingKey {
         var stringValue: String
         init?(stringValue: String) {

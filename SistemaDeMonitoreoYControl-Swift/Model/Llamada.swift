@@ -8,18 +8,19 @@
 
 import Foundation
 import UIKit
+import OpenTok
 
 struct Llamada: Decodable {
     let origen: String
     let modo: Modo
     let llamadaSOS: Bool
-    let usuario: InformacionIntegrante
+    var usuario: InformacionIntegrante
     let fechaServidor: String
     let horaServidor: String
     var registro: RegistroLlamada
     let idconnection: String
     let credenciales: Credenciales
-    var subscriberView: UIView?
+    var subscriber: OTSubscriber?
     
     enum CodingKeys: String, CodingKey {
         case origen = "origen"

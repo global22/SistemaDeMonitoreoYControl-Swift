@@ -7,73 +7,43 @@
 //
 
 import UIKit
+import LBTATools
 
-class InformacionController: UICollectionViewController {
+class InformacionController: LBTAFormController {
     
-    fileprivate let informacionCellId = "informacionCellId"
-    fileprivate let generarReporteCellId = "generarReporteCellId"
+    let informacionIntegranteView = InformacionIntegranteView()
+    let generarReporteView = GenerarReporteView()
     
     var llamada: Llamada! {
         didSet {
-            collectionView.reloadData()
+            navigationItem.title = llamada.modo.nombre
+            informacionIntegranteView.informacionIntegrante = llamada.usuario
         }
-    }
-    
-    init() {
-        super.init(collectionViewLayout: UICollectionViewFlowLayout())
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError()
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        navigationItem.title = "Información"
+        setupViewComponents()
+    }
+    
+    fileprivate func setupViewComponents() {
+        view.backgroundColor = #colorLiteral(red: 0.2039999962, green: 0.2269999981, blue: 0.2509999871, alpha: 1)
+        
+        
         navigationItem.leftBarButtonItem = .init(title: "Atrás", style: .plain, target: self, action: #selector(handleBack))
         
-        collectionView.register(InformacionCell.self, forCellWithReuseIdentifier: informacionCellId)
-        collectionView.register(GenerarReporteCell.self, forCellWithReuseIdentifier: generarReporteCellId)
+        let informacionStack = UIView()
+        informacionStack.stack(informacionIntegranteView,
+                               generarReporteView)
+        
+        formContainerStackView.addArrangedSubview(informacionStack)
     }
     
-    @objc func handleBack() {
+    @objc fileprivate func handleBack() {
         dismiss(animated: true, completion: nil)
     }
-    
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 2
-    }
-    
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        if indexPath.item == 0 {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: informacionCellId, for: indexPath) as! InformacionCell
-            cell.informacionIntegranteView.informacionIntegrante = llamada.usuario
-            return cell
-        } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: generarReporteCellId, for: indexPath) as! GenerarReporteCell
-            return cell
-        }
-    }
+
 }
 
-extension InformacionController: UICollectionViewDelegateFlowLayout {
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        var height: CGFloat = 200
-        if indexPath.item == 0 {
-            let cell = InformacionCell(frame: .init(x: 0, y: 0, width: view.frame.width, height: 1000))
-            let estimatedSize = cell.systemLayoutSizeFitting(.init(width: view.frame.width, height: 1000))
-            height = estimatedSize.height
-        } else if indexPath.item == 1 {
-            let cell = GenerarReporteCell(frame: .init(x: 0, y: 0, width: view.frame.width, height: 1000))
-            let estimatedSize = cell.systemLayoutSizeFitting(.init(width: view.frame.width, height: 1000))
-            height = estimatedSize.height
-        }
-        return .init(width: view.frame.width, height: height)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 0
-    }
-    
-}
+

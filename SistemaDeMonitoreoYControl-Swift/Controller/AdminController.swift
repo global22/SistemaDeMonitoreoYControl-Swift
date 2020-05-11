@@ -41,12 +41,7 @@ class AdminController: BaseViewController {
         return tableView
     }()
     
-    lazy var webSocket: WebSocket = {
-        let urlRequest = URLRequest(url: URL(string: "\(Service.shared.socketBaseUrl)/SocketNotifications")!)
-        let socket = WebSocket(request: urlRequest)
-        socket.delegate = self
-        return socket
-    }()
+    var webSocket: WebSocket!
     
     var llamadas = [Llamada]()
     
@@ -68,14 +63,21 @@ class AdminController: BaseViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if UserDefaults.standard.object(forKey: "user") != nil {
+        if UserDefaults.standard.object(forKey: Constants.usuario) != nil {
+            guard let socketUrl = UserDefaults.standard.object(forKey: Constants.baseSocketUrl) else { fatalError("Url del socket no proporcionada") }
+            let urlRequest = URLRequest(url: URL(string: "\(socketUrl)/SocketNotifications")!)
+            webSocket = WebSocket(request: urlRequest)
+            webSocket.delegate = self
             webSocket.connect()
         }
     }
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        webSocket.disconnect()
+        
+        if UserDefaults.standard.object(forKey: Constants.usuario) != nil {
+            webSocket.disconnect()
+        }
     }
     
     // MARK: - Helper Fucntions
@@ -111,7 +113,7 @@ class AdminController: BaseViewController {
         var item = 0
         for i in 0..<llamadas.count {
             if llamadas[i].credenciales.sesion == stream.session.sessionId {
-                llamadas[i].subscriberView = subscriber.view
+                llamadas[i].subscriber = subscriber
                 item = i
             }
         }
@@ -281,6 +283,7 @@ extension AdminController: WebSocketDelegate {
                     }
                 }
             }
+            print("Web socket recibió un mensaje: \(string)")
         case .binary(let data):
             print("Web socket recibió data: \(data)")
         case .pong(_):
@@ -337,7 +340,6 @@ extension AdminController: OTSessionDelegate {
     func session(_ session: OTSession, streamCreated stream: OTStream) {
         print("streamCreated")
         susbcribeToStream(stream)
-        self.item += 1
     }
     
     func session(_ session: OTSession, streamDestroyed stream: OTStream) {

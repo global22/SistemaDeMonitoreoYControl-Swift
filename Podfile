@@ -17,5 +17,6 @@ target 'SistemaDeMonitoreoYControl-Swift' do
   pod 'Cluster'
   pod 'Starscream'
   pod 'OpenTok'
+  pod 'MessageKit'
 
 end

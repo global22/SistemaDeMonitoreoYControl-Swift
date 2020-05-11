@@ -38,7 +38,8 @@ final class MonitoreoUnidadesController: BaseMapController {
     var integrantesMapa = [IntegranteMapa]()
     
     lazy var webSocket: WebSocket = {
-        let urlRequest = URLRequest(url: URL(string: "\(Service.shared.socketBaseUrl)/SocketNotifications")!)
+        guard let socketUrl = UserDefaults.standard.object(forKey: Constants.baseSocketUrl) else { fatalError("Url del socket no proporcionada") }
+        let urlRequest = URLRequest(url: URL(string: "\(socketUrl)/SocketNotifications")!)
         let socket = WebSocket(request: urlRequest)
         socket.delegate = self
         return socket
@@ -318,7 +319,7 @@ extension MonitoreoUnidadesController: IntegrantesViewDelegate {
 	}
 	
 	func seleccionoIntegrante(_ integrante: Integrante) {
-		let integranteMapa = IntegranteMapa(nombre: integrante.nombre, apellidoPaterno: integrante.apellidoPaterno, apellidoMaterno: integrante.apellidoMaterno, latitud: integrante.getLat(), longitud: integrante.getLng(), icon: integrante.icon, idUsuario: integrante.idUsuarioMovil, estaEnRuta: true, fecha: integrante.gps.fecha ?? "", hora: integrante.gps.hora ?? "", servicio: integrante.aliasServicio, img: integrante.img)
+        let integranteMapa = IntegranteMapa(nombre: integrante.nombre, apellidoPaterno: integrante.apellidoPaterno, apellidoMaterno: integrante.apellidoMaterno, latitud: integrante.getLat(), longitud: integrante.getLng(), icon: integrante.icon, idUsuario: integrante.idUsuarioMovil, estaEnRuta: true, fecha: integrante.gps.fecha ?? "", hora: integrante.gps.hora ?? "", servicio: integrante.aliasServicio, img: integrante.img, firebase: integrante.FireBaseKey ?? "")
 		
 		mapView.addAnnotation(integranteMapa)
 		mapView.showAnnotations(mapView.annotations, animated: true)
@@ -351,7 +352,7 @@ extension MonitoreoUnidadesController: RegistroRutasDelegate {
                         let datosRuta = ruta.fecha[fecha]
                         guard let lat = datosRuta?.latitud else { return }
                         guard let lng = datosRuta?.longitud else { return }
-                        let integranteMapa = IntegranteMapa(nombre: integrante.nombre, apellidoPaterno: integrante.apellidoPaterno, apellidoMaterno: integrante.apellidoMaterno, latitud: Double(lat)!, longitud: Double(lng)!, icon: integrante.icon, idUsuario: integrante.idUsuarioMovil, estaEnRuta: false, fecha: fecha, hora: datosRuta!.hora, servicio: integrante.aliasServicio, img: integrante.img)
+                        let integranteMapa = IntegranteMapa(nombre: integrante.nombre, apellidoPaterno: integrante.apellidoPaterno, apellidoMaterno: integrante.apellidoMaterno, latitud: Double(lat)!, longitud: Double(lng)!, icon: integrante.icon, idUsuario: integrante.idUsuarioMovil, estaEnRuta: false, fecha: fecha, hora: datosRuta!.hora, servicio: integrante.aliasServicio, img: integrante.img, firebase: integrante.FireBaseKey ?? "")
                         
                         guard let rutaString = datosRuta?.getRuta() else { return }
                         
@@ -412,6 +413,16 @@ extension MonitoreoUnidadesController: IntegranteMapaDelegate {
         manager.removeAll()
         manager.reload(mapView: mapView)
         mapView.removeOverlays(mapView.overlays)
+    }
+    
+    func integranteMapaView(_ integranteMapaView: IntegranteMapaView, llamoAlIntegrante integrante: IntegranteMapa, con credenciales: CredencialesOperador) {
+        DispatchQueue.main.async {
+            let llamadaController = LlamadaController()
+            llamadaController.connectToSession(apiKey: credenciales.apikey, sessionId: credenciales.idsesion, token: credenciales.token)
+            let navController = UINavigationController(rootViewController: llamadaController)
+            navController.modalPresentationStyle = .fullScreen
+            self.present(navController, animated: true, completion: nil)
+        }
     }
     
     func integranteMapaView(_ integranteMapaView: IntegranteMapaView, ocultoLaRutaDelIntegrante integrante: IntegranteMapa) {

@@ -31,7 +31,7 @@ class LlamadaEntranteCell: UICollectionViewCell {
                     imageView.isHidden = true
                     profileImageView.removeFromSuperview()
                     
-                    if let subscriberView = llamada.subscriberView {
+                    if let subscriberView = llamada.subscriber?.view {
                         subscriberView.frame = viewContrainer.bounds
                         viewContrainer.insertSubview(subscriberView, at: 0)
                     }
@@ -44,7 +44,7 @@ class LlamadaEntranteCell: UICollectionViewCell {
                     profileImageView.frame = viewContrainer.bounds
                     viewContrainer.insertSubview(profileImageView, at: 0)
                     
-                    if let subscriberView = llamada.subscriberView {
+                    if let subscriberView = llamada.subscriber?.view {
                         subscriberView.removeFromSuperview()
                     }
                 }
