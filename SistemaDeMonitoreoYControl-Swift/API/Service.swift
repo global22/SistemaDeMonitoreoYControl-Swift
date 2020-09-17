@@ -244,12 +244,12 @@ class Service: NSObject {
                                        "token": credenciales.token,
                                        "type": "3"]
         
-        let params: [String: Any] = ["to": "fe7spefMBAw:APA91bGUbRSzp-ScB1W2nAIFaaiOzGQw-rCZjQ705AVBC65TD0ZiWrpN1oCsZmSKde0_mdsuOjJCBtJFiW363uaLodQGvfEtBndsPg0EJHvfRInvEuZ6LxFXyUAJK808lv4NMvO67-IS",
+        let params: [String: Any] = ["to": firebaseKey, //"fe7spefMBAw:APA91bGUbRSzp-ScB1W2nAIFaaiOzGQw-rCZjQ705AVBC65TD0ZiWrpN1oCsZmSKde0_mdsuOjJCBtJFiW363uaLodQGvfEtBndsPg0EJHvfRInvEuZ6LxFXyUAJK808lv4NMvO67-IS",
                                     "priority": "high",
                                     "content-available": true,
-                                    "notification": ["title": "TITLE", "body": "BODY"]]
+//                                    "notification": ["title": "TITLE", "body": "BODY"]]
                                     // notification: [title: String, body: String]
-//                                    "data": dataBody]
+                                    "data": dataBody]
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
